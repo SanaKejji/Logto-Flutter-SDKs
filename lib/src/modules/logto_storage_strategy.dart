@@ -13,9 +13,7 @@ abstract class LogtoStorageStrategy {
 
 class SecureStorageStrategy implements LogtoStorageStrategy {
   final _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
+    aOptions: AndroidOptions(),
   );
 
   @override

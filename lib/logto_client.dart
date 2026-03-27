@@ -236,14 +236,14 @@ class LogtoClient {
         extraParams: extraParams,
       );
 
-      final redirectUriScheme = Uri.parse(redirectUri).scheme;
+      final parsedRedirectUri = Uri.parse(redirectUri);
 
       final String callbackUri = await FlutterWebAuth2.authenticate(
         url: signInUri.toString(),
-        callbackUrlScheme: redirectUriScheme,
-        options: const FlutterWebAuth2Options(
-          /// Prefer ephemeral web views for the sign-in flow. Only has an effect on Android.
-          intentFlags: ephemeralIntentFlags,
+        callbackUrlScheme: parsedRedirectUri.scheme,
+        options: FlutterWebAuth2Options(
+          httpsHost: parsedRedirectUri.host,
+          httpsPath: parsedRedirectUri.path,
 
           /// Prefer ephemeral web views for the sign-in flow. Only has an effect on iOS.
           preferEphemeral: true,
@@ -326,18 +326,22 @@ class LogtoClient {
       // iOS uses the preferEphemeral flag on the sign-in flow, it will not preserve the session.
       // For Android and Web, we need to redirect to the end session endpoint to clear the session manually.
       if (kIsWeb || !Platform.isIOS) {
+        final parsedRedirectUri = Uri.parse(redirectUri);
+
         final signOutUri = logto_core.generateSignOutUri(
             endSessionEndpoint: oidcConfig.endSessionEndpoint,
             clientId: config.appId,
-            postLogoutRedirectUri: Uri.parse(redirectUri));
-        final redirectUriScheme = Uri.parse(redirectUri).scheme;
+            postLogoutRedirectUri: parsedRedirectUri);
 
         // Execute the sign-out flow asynchronously, this should not block the main app to render the UI.
         await FlutterWebAuth2.authenticate(
             url: signOutUri.toString(),
-            callbackUrlScheme: redirectUriScheme,
-            options: const FlutterWebAuth2Options(
-                intentFlags: ephemeralIntentFlags));
+            callbackUrlScheme: parsedRedirectUri.scheme,
+            options: FlutterWebAuth2Options(
+              preferEphemeral: true,
+              httpsHost: parsedRedirectUri.host,
+              httpsPath: parsedRedirectUri.path,
+            ));
       }
     } finally {
       if (_httpClient == null) {
